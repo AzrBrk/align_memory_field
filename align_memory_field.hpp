@@ -62,7 +62,6 @@ public:
     align_memory_field(align_memory_field&& another)
     {
         base_ptr = another.base_ptr;
-        another.base_ptr = nullptr;
     }
 
     template<typename structT> structT* cast() const
