@@ -70,6 +70,7 @@ public:
     {
         return reinterpret_cast<structT*>(base_ptr);
     }
+
     template<std::size_t I> constexpr void initialize()
     {
         using Dest_offset_t = exp_select<I, All_align_ptrs>;
