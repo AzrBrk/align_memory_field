@@ -8,7 +8,7 @@ C++ 元偏移指针
 
 # align_memory_field
 
-`align_memory_field` 是一个强大的异构容器，允许在内存中创建一段由指定对齐限制所构成的数据块，并提供类似于 `std::tuple` 的编译期常数访问。该容器的所有指针偏移都基于编译时运算。
+`align_memory_field` 是一个异构容器，允许在内存中创建一段由指定对齐限制所构成的数据块，并提供类似于 `std::tuple` 的编译期常数访问。该容器的所有指针偏移都基于编译时运算。
 
 ## 使用
 
@@ -83,6 +83,26 @@ char val3 = m_field.read<2>();
 ```cpp
 struct X { int a; double b; char c; };
 X* ptr = m_field.template cast<X>();
+```
+
+### 支持placement new
+
+假如你类型列表中的类型需要初始化，则在赋值之前应当初始化它，使用如下代码：
+
+```cpp
+ align_memory_field<8, std::string, int> m_field{};
+
+ m_field.initialize<0>();
+
+ m_field.write<0>("hello");
+
+ m_field.write<1>(443);
+
+ struct hello { std::string str{}; int No; };
+
+ hello* Hello = m_field.cast<hello>();
+
+ std::print("m_field:{}, No.{}", Hello->str, Hello->No);
 ```
 
 ## 性能比较
