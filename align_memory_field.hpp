@@ -70,6 +70,14 @@ public:
     {
         return reinterpret_cast<structT*>(base_ptr);
     }
+    template<std::size_t I> constexpr void initialize()
+    {
+        using Dest_offset_t = exp_select<I, All_align_ptrs>;
+
+        unsigned char* place_ptr = base_ptr + Dest_offset_t::layer * pack_size + Dest_offset_t::value;
+
+        new(place_ptr) exp_select<I, exp_list<Args...>>;
+    }
 
     template<std::size_t I> constexpr void write(exp_select<I, exp_list<Args...>> const& value)
     {
