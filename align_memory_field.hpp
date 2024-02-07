@@ -62,6 +62,7 @@ public:
     align_memory_field(align_memory_field&& another)
     {
         base_ptr = another.base_ptr;
+        //必须赋值为nullptr，否则当被移动的对象消亡，析构函数就会释放该内存
         another.base_ptr = nullptr;
     }
 
