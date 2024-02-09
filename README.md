@@ -84,6 +84,13 @@ char val3 = m_field.read<2>();
 struct X { int a; double b; char c; };
 X* ptr = m_field.template cast<X>();
 ```
+注意：
+
+- 当你在你的代码中使用了possibilities这个元编程库时，align_memory_field将验证指定的结构体是否拥有相同的
+类型成员。但不是必须的，使用了之后不会带来性能损失，但是会带来一定的代码限制。
+- 当你将m_field的内存转换为一个结构体之后，请保证m_field的生存，因为m_field在析构时将销毁它拥有的内存
+
+PS：possibilities是一个在编译期推导聚合类中的成员的工具。
 
 ### 支持placement new
 
@@ -95,7 +102,6 @@ X* ptr = m_field.template cast<X>();
  m_field.initialize<0>();
 
  m_field.write<0>("hello");
-
  m_field.write<1>(443);
 
  struct hello { std::string str{}; int No; };
@@ -105,6 +111,60 @@ X* ptr = m_field.template cast<X>();
  std::print("m_field:{}, No.{}", Hello->str, Hello->No);
 ```
 
-## 性能比较
+### 辅助模板
 
-通过与 `std::tuple` 的基准测试，`align_memory_field` 在特定场景下表现更为优异，但在实际应用中，建议根据具体需求和场景选择最适合的数据结构。
+align_memory_field允许你使用任意的对齐长度， 但当你不知道你应该采取怎样的对齐长度时，
+你可以通过头文件提供的别名模板decl_align来获取默认的对齐长度。
+
+```cpp
+#include"align_memory_field.hpp"
+
+int main()
+{
+    constexpr std::size_t align_s = decl_align<int, const char*, double>;
+    align_memory_field<align_s, int, const char*, double> m_field;
+}
+```
+
+### 内存管理
+
+align_memory_field在无异常的情况下可以自动管理申请的内存
+
+```cpp
+#include"align_memory_field.hpp"
+#include<iostream>
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
+template<class ...Args> 
+    requires std::conjunction_v<std::is_fundamental<std::remove_cvref_t<Args>>...>
+auto make_field(Args const& ...args)
+{
+    constexpr std::size_t align_s = decl_align<Args...>;
+
+    align_memory_field<align_s, std::decay_t<Args>...> field{};
+
+    [&] <std::size_t ...I, class ...LArgs>(std::index_sequence<I...>, LArgs const& ...largs)
+    {
+        (field.write<I>(largs), ...);
+    }(std::make_index_sequence<sizeof...(Args)>{}, args...);
+    
+    return field;
+}
+
+void detect_leak()
+{
+    auto mf = std::move(make_field(1, 2.33, 'k', 1.f)); //移动构造，推荐使用，由于使用动态内存，直接交换指针即可，消亡的对象不会释放指针，只有当mf析构时才会释放内存；
+    std::cout << mf.read<2>();
+
+    auto mf2 = mf;//复制构造，但无需手动释放内存，但是需要深拷贝, align_memory_field会直接调用std::copy，不会进行赋值操作，这意味着你的复制构造函数，重载赋值运算符将不会生效
+}
+
+int main()
+{
+    detect_leak();
+    _CrtDumpMemoryLeaks();
+}
+```
+
