@@ -11,7 +11,7 @@
 
 void foo_align_offset_f4(benchmark::State& state)
 {
-
+    //stimulate if alignsize is 4
     align_memory_field<4, int, std::string, int> m_field{};
     m_field.initialize<1>("");
     for (auto _ : state) {
