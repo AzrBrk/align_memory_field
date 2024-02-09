@@ -56,7 +56,35 @@ X* ptr = m_field.template cast<X>();
 
 - **编译期常数访问：** 通过编译时运算的方式，提供了类似于 `std::tuple` 的访问接口，同时避免了运行时性能开销。
 
-- **灵活性与效率的平衡：** 相对于一些通用容器，`align_memory_field` 可以在特定场景下取得更好的性能表现，拥有和 std::tuple几乎一样的效率（可以运行main.cpp中的基准测试);
+- **灵活性与效率的平衡：** 拥有和 std::tuple几乎一样的效率（可以运行main.cpp中的基准测试):
+
+```cpp  
+2024-02-09T23:21:16+08:00
+Running G:\cpp\lib\Meta_Object\x64\Release\MO.exe
+Run on (12 X 3493 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x6)
+  L1 Instruction 32 KiB (x6)
+  L2 Unified 512 KiB (x6)
+  L3 Unified 32768 KiB (x1)
+-------------------------------------------------------------
+Benchmark                   Time             CPU   Iterations
+-------------------------------------------------------------
+foo_align_offset_f      0.455 ns        0.459 ns   1600000000
+foo_tuple               0.455 ns        0.455 ns   1544827586
+foo_align_offset_f      0.454 ns        0.439 ns   1600000000
+foo_tuple               0.460 ns        0.439 ns   1600000000
+foo_align_offset_f      0.455 ns        0.439 ns   1600000000
+foo_tuple               0.453 ns        0.430 ns   1600000000
+foo_align_offset_f      0.453 ns        0.435 ns   1544827586
+foo_tuple               0.453 ns        0.439 ns   1672533333
+foo_align_offset_f      0.455 ns        0.435 ns   1544827586
+foo_tuple               0.454 ns        0.445 ns   1544827586
+foo_align_offset_f      0.452 ns        0.445 ns   1544827586
+foo_tuple               0.455 ns        0.410 ns   1600000000
+```
+
+  
 
 - **特点** 可以转化为一个拥有同样类型结构的结构体，无转化开销。
 
