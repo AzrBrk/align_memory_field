@@ -1,14 +1,10 @@
 # align_memory_field
 
-C++ 元偏移指针
+`align_memory_field` 是一个异构容器，允许在内存中创建一段由指定对齐限制所构成的数据块，并提供类似于 `std::tuple` 的编译期常数访问。该容器的所有指针偏移都基于编译时运算。
 
-## 注意
+## 注意事项
 
 需要C++20， 测试通过:msvc latest, clang17.0, gcc13.2
-
-# align_memory_field
-
-`align_memory_field` 是一个异构容器，允许在内存中创建一段由指定对齐限制所构成的数据块，并提供类似于 `std::tuple` 的编译期常数访问。该容器的所有指针偏移都基于编译时运算。
 
 ## 使用
 
@@ -47,6 +43,7 @@ X* ptr = m_field.template cast<X>();
 - 不能声明引用类型。
 - 不会自动初始化内存。
 - 在出现异常时，可能存在内存泄漏的风险。
+- 暂未支持聚合体中拥有数组，但可以有指针，数组是可实现的，但尚未实现。
 
 ## 优势
 
@@ -86,7 +83,7 @@ foo_tuple               0.455 ns        0.410 ns   1600000000
 
   
 
-- **特点** 可以转化为一个拥有同样类型结构的结构体，无转化开销。
+- **特点** 可以与拥有同样类型结构的结构体之间相互转化，并且无转化开销，转化使用`reinterpret_cast`。
 
 ## 示例说明
 
@@ -108,12 +105,19 @@ double val2 = m_field.read<1>();
 char val3 = m_field.read<2>();
 ```
 
-### 转换为自定义类型
+### 自定义类型转换
 
 ```cpp
 struct X { int a; double b; char c; };
 X* ptr = m_field.template cast<X>();
+
+decltype(m_field) m_field2{};
+copy_struct(m_field2, *ptr);
+
+m_field2.write<0>(10);
+//...
 ```
+
 注意：
 
 - 当你在你的代码中使用了possibilities这个元编程库时，align_memory_field将验证指定的结构体是否拥有相同的
