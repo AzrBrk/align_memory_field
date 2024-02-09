@@ -84,7 +84,9 @@ foo_align_offset_f8       3.41 ns         2.85 ns    280000000
 foo_tuple                 3.65 ns         2.62 ns    280000000
 ```
 
+
 这里可以看出来8在int string int的内存组合下，8位内存对齐是最优的
+foo_align_offset_f4模拟了假如内存对齐位4的情况
 解释了为什么要内存对齐的原理
 
   
