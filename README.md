@@ -56,7 +56,7 @@ X* ptr = m_field.template cast<X>();
 - **灵活性与效率的平衡：** 拥有和 std::tuple几乎一样的效率（可以运行main.cpp中的基准测试):
 
 ```cpp  
-2024-02-09T23:21:16+08:00
+2024-02-10T07:15:15+08:00
 Running G:\cpp\lib\Meta_Object\x64\Release\MO.exe
 Run on (12 X 3493 MHz CPU s)
 CPU Caches:
@@ -64,22 +64,28 @@ CPU Caches:
   L1 Instruction 32 KiB (x6)
   L2 Unified 512 KiB (x6)
   L3 Unified 32768 KiB (x1)
--------------------------------------------------------------
-Benchmark                   Time             CPU   Iterations
--------------------------------------------------------------
-foo_align_offset_f      0.455 ns        0.459 ns   1600000000
-foo_tuple               0.455 ns        0.455 ns   1544827586
-foo_align_offset_f      0.454 ns        0.439 ns   1600000000
-foo_tuple               0.460 ns        0.439 ns   1600000000
-foo_align_offset_f      0.455 ns        0.439 ns   1600000000
-foo_tuple               0.453 ns        0.430 ns   1600000000
-foo_align_offset_f      0.453 ns        0.435 ns   1544827586
-foo_tuple               0.453 ns        0.439 ns   1672533333
-foo_align_offset_f      0.455 ns        0.435 ns   1544827586
-foo_tuple               0.454 ns        0.445 ns   1544827586
-foo_align_offset_f      0.452 ns        0.445 ns   1544827586
-foo_tuple               0.455 ns        0.410 ns   1600000000
+--------------------------------------------------------------
+Benchmark                    Time             CPU   Iterations
+--------------------------------------------------------------
+foo_align_offset_f4       3.91 ns         2.13 ns    263529412
+foo_align_offset_f8       3.66 ns         2.67 ns    298666667
+foo_tuple                 3.69 ns         2.57 ns    280000000
+foo_align_offset_f4       3.90 ns         3.01 ns    280000000
+foo_align_offset_f8       3.66 ns         2.73 ns    280000000
+foo_tuple                 3.75 ns         2.52 ns    235789474
+foo_align_offset_f4       3.89 ns         2.79 ns    224000000
+foo_align_offset_f8       3.42 ns         2.61 ns    263529412
+foo_tuple                 3.64 ns         2.52 ns    235789474
+foo_align_offset_f4       3.87 ns         2.93 ns    224000000
+foo_align_offset_f8       3.42 ns         2.13 ns    344615385
+foo_tuple                 3.63 ns         2.78 ns    235789474
+foo_align_offset_f4       3.88 ns         2.92 ns    235789474
+foo_align_offset_f8       3.41 ns         2.85 ns    280000000
+foo_tuple                 3.65 ns         2.62 ns    280000000
 ```
+
+这里可以看出来8在int string int的内存组合下，8位内存对齐是最优的
+解释了为什么要内存对齐的原理
 
   
 
