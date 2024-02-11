@@ -57,7 +57,7 @@ public:
         base_ptr(new unsigned char[N])
     {}
 
-    //static constructor
+    //static... well, not a constructor
     template<class Obj_t, class En = std::enable_if_t<Is_self_destructible>>
     align_memory_field(Obj_t* p_memory_locate)
         :
