@@ -5,6 +5,7 @@ namespace offset_pointer {
     {
         return *(reinterpret_cast<T*>(reinterpret_cast<unsigned char*>(base_ptr) + offset));
     }
+
     //to fix the std::conditional_t with SFINAE
     template<bool con, class T> struct invoke_type_if_impl
     {
@@ -131,9 +132,9 @@ namespace offset_pointer {
     {
         //kept pointer
         using type = align_offset_pointer;
-        //common iterface
+        //common interface
         using get = align_offset_seek_t<type, first>;
-        //common interface for tyinfo
+        //common interface for Ty info
         using value_type = first;
     };
 
