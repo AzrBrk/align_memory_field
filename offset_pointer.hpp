@@ -1,3 +1,4 @@
+#pragma once
 #include<type_traits>
 namespace offset_pointer {
     template<typename structT, typename T>

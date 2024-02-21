@@ -1,3 +1,4 @@
+#pragma once
 #include<iostream>
 #include<tuple>
 #include<variant>
@@ -209,9 +210,6 @@ using exp_is_one_of
 	exp_cmp<max_type_list_index<T>::value, C, T>::value,
 	max_type_list_index<T>::value,
 	C, T>;
-
-
-
 
 
 template<class L, class T>
@@ -471,7 +469,7 @@ using exp_transform_to = typename exp_tl::template to<temp>;
 template<template<class ...> class Tl, class F, class ...Typs, class ...Args>
 constexpr std::size_t template_func_execute_launcher(Tl<Typs...>, F&& f, Args&&...args)
 {
-	(f.template operator() < Typs > (std::forward<Args>(args)...), ...);
+	(f.template operator()(Typs{}, std::forward<Args>(args)...), ...);
 	return sizeof...(Typs);
 }
 
@@ -493,6 +491,10 @@ namespace exp_repeat
 	template<std::size_t _I>
 	struct Idx {
 		static const size_t value = _I;
+		constexpr std::size_t operator()()
+		{
+			return _I;
+		}
 	};
 
 	template<class _Idx, size_t _I>
@@ -1017,7 +1019,7 @@ namespace meta_traits
 		template<class condition_f> struct fliter : append
 		{
 			template<class thisObj, class _2> using apply = exp_if<
-				(!meta_invoke<condition_f, thisObj, _2>::value),
+				(meta_invoke<condition_f, thisObj, _2>::value),
 				append::apply<thisObj, _2>,
 				thisObj
 			>;
@@ -1218,11 +1220,23 @@ namespace meta_traits
 	template<size_t I, size_t counts> using list_slice = exp_repeat::meta_to_array<
 		meta_count<I, counts>>::template to<exp_select_list>;
 }
+template<std::size_t N, class Obj, class F, class BF> 
+struct type_list_size<meta_traits::meta_timer_object<N, Obj, F, BF>>
+{
+    static constexpr std::size_t value = N;
+};
+
 
 namespace meta_typelist
 {
 	using namespace meta_traits;
 	using namespace meta_traits::common_object;
+
+	template<class TL>
+	struct meta_clear {};
+	template<template<class...> class TL, class...L>
+	struct meta_clear<TL<L...>> { using type = TL<>; };
+	template<class TL> using meta_clear_t = typename meta_clear<TL>::type;
 
 
 	//define meta_stream object
@@ -1289,6 +1303,23 @@ namespace meta_typelist
 	template<class MMO(stream)> using meta_stream_transfer_mo = typename Meta_Stream_Transfer<MMO(stream)>::mo;
 	template<class MMO(stream)> using meta_stream_transfer_timer = typename Meta_Stream_Transfer<MMO(stream)>::timer;
 
+	template<class MMO(O)> using clear_meta_oject = typename MMO(O)
+		:: template meta_set<meta_clear_t<typename MMO(O)::type>>;
+
+	template<class mso, std::size_t N = 0> struct clear_stream {};
+
+	template<auto A, auto B> constexpr auto max_value = (A > B) ? A : B;
+	template<auto A, auto B> constexpr auto min_value = (A < B) ? A : B;
+
+	template<std::size_t N, class MMO(TO), class MMO(From), std::size_t Left>
+	struct clear_stream<meta_stream_o<Left, MMO(TO), MMO(From)>, N>
+	{
+		using clear_os = clear_stream<meta_stream_o<Left, clear_meta_oject<MMO(TO)>, MMO(From)>, N>;
+		using clear_is = clear_stream<meta_stream_o<Left, MMO(TO), clear_meta_oject<MMO(From)>>, N>;
+		using reset_time = clear_stream<meta_stream_o<N, MMO(TO), MMO(From)>, N>;
+		using type = meta_stream_o<Left, MMO(TO), MMO(From)>;
+	};
+
 
 	struct meta_linker
 	{
@@ -1302,11 +1333,7 @@ namespace meta_typelist
 
 	template<class ...Typs>
 	struct selectable_list;
-	template<class TL>
-	struct meta_clear {};
-	template<template<class...> class TL, class...L>
-	struct meta_clear<TL<L...>> { using type = TL<>; };
-	template<class TL> using meta_clear_t = typename meta_clear<TL>::type;
+	
 
 	template<size_t N> struct meta_spliter
 	{
@@ -1438,7 +1465,14 @@ namespace meta_typelist
 
 	}
 
-	template<class mso> using stream_final_t = typename mso::to::type;
+	template<class T> struct stream_final_type { using type = T; };
+	template<class mso> requires requires{typename mso::to::type; }
+	struct stream_final_type<mso> {
+		using type = typename mso::to::type;
+	};
+
+	template<class mso> using stream_final_t = typename stream_final_type<mso>::type;
+
 	template<class F> struct meta_stream_op
 	{
 		template<class mso, class ...Args> using apply = meta_invoke<F, stream_final_t<mso>, Args...>;
@@ -1507,32 +1541,6 @@ namespace meta_typelist
 		template<template<class...> class TL2>
 		using with = TL2<T...>;
 	};
-
-	//example of using meta stream and meta object to generate a typelist with each type in typelist is uniqued
-	//Note : a meta stream is itself an meta object
-	struct unique_type_list
-	{
-		template<class TL, class T> struct is_one_of_f :std::false_type
-		{};
-
-		template<template<class...> class TL, class T> struct is_one_of_f<TL<>, T> :std::true_type
-		{};
-
-		template<template<class...> class TL, class T, class TO, class ...Args> struct is_one_of_f<TL<T, Args...>, TO>
-		{
-			static constexpr bool value = !exp_is_one_of<TO, TL<T, Args...>>::value;
-		};
-
-		template<class ThisMo, class T> struct apply
-		{
-			static constexpr bool value = !(is_one_of_f<ThisMo, T>::value);
-		};
-	};
-
-	using unique_type_list_o = common_object::meta_appendable_filter_o<exp_list<>, unique_type_list>;
-
-	template<class TL> using make_unique_list = typename meta_all_transfer<unique_type_list_o, meta_istream<TL>>::to::type;
-
 	template<class TL, class MArr> struct meta_swap2_type
 	{
 		using iter = to_selectable_t<TL>;
@@ -1602,20 +1610,6 @@ namespace meta_typelist
 			using trim_front = get_type<trim_f<meta_list<Args...>>>;
 
 		};
-		template<class typelist> struct offset_array {};
-		template<template<class...> class typelist, class ...types> struct offset_array<typelist<types...>>
-		{
-			using type = meta_array<sizeof(types)...>;
-		};
-
-		template<class typelist> using offset_array_t = get_type<offset_array<typelist>>;
-
-		template<class TL> using to_meta_list_t = typename to_exp_list<TL>::type::template to<meta_list>;
-
-
-
-		//trim typelist until meet con
-
 		//from -> to
 		struct reverse_decrease
 		{
@@ -1650,17 +1644,6 @@ namespace meta_typelist
 			template<class this_tl> using apply = get_type<apply_impl<this_tl>>;
 		};
 
-		template<class TL> using meta_reverse_istream = meta_ret_object<TL, reverse_decrease, reverse_decrease_ret>;
-		template<class TL> struct reverse_typelist
-		{
-			using type = typename meta_all_transfer<
-				meta_ostream<exp_list<>>,
-				meta_reverse_istream<TL>
-			>::to::type;
-		};
-
-		template<class TL> using reverse_t = typename reverse_typelist<TL>::type;
-
 		template<class TL> using meta_reverse_decrease_o = meta_object<TL, reverse_decrease>;
 		template<class T> using meta_empty_alias = T;
 		template<class T> using meta_self_o = meta_object<T, meta_empty_fn>;
@@ -1675,17 +1658,54 @@ namespace meta_typelist
 		{
 			template<class this_selectable_o, class T> using apply = selectable_list<typename this_selectable_o::template get<0>, T>;
 		};
-		template<class T> using meta_attach_o = meta_object<selectable_list<T, T>, attach_f>;
+		template<std::size_t N>
+		struct mso_stride
+		{
+			template<class source_empty_mso>
+			struct impl
+			{
+				using type = source_empty_mso;
+			};
+
+			template<class mso> requires (exp_size<typename mso::type::to::type> > 0)
+				struct impl<mso>
+			{
+				using reset_timer_t = typename mso::template reset<N>;
+				using clear_os_t = typename clear_stream<reset_timer_t>::clear_os::type;
+				using type = meta_stream_transfer_timer<clear_os_t>::template reset<N>;
+			};
+			template<class this_mso, class ...>
+			using apply = typename impl<this_mso>::type;
+		};
+
+		template<std::size_t N>
+		struct mso_stride_ret
+		{
+			template<class this_mso> using apply = typename this_mso::type::to::type;
+		};
 
 
+		//interface
+		template<std::size_t Stride, class TL> using meta_stride_istream = meta_ret_object<
+				meta_stream_o<(exp_size<TL> / Stride),
+				meta_ostream<typename meta_spliter<Stride>::template front<TL>>,
+				meta_istream<typename meta_spliter<Stride>::template back<TL>>
+			>, mso_stride<Stride>, mso_stride_ret<Stride>
+		>;
 		template<class TL, template<class> class F> using meta_list_apply_o = meta_object<TL, list_apply_f<F>>;
 		template<std::size_t N, class TL, template<class> class F> using meta_list_apply_to = meta_timer_object<N, TL, list_apply_f<F>>;
-
+		template<class T> using meta_attach_o = meta_object<selectable_list<T, T>, attach_f>;
+		template<class TL> using meta_reverse_istream = meta_ret_object<TL, reverse_decrease, reverse_decrease_ret>;
+				template<class TL> struct reverse_typelist
+		{
+			using type = typename meta_all_transfer<
+				meta_ostream<exp_list<>>,
+				meta_reverse_istream<TL>
+			>::to::type;
+		};
+		template<class TL> using reverse_t = typename reverse_typelist<TL>::type;
 
 	}
-
-
-
 
 	namespace collector
 	{
@@ -1737,11 +1757,15 @@ namespace meta_typelist
 		{
 			using type = typename meta_timer_looper_t<meta_collect_ostream<looper, TL>>::type::to::type;
 		};
-		template<class looper, class TL = exp_list<>> using collect = typename looper_collector<looper, TL>::type;
-		template<std::size_t N, class os, class ins>
-		struct looper_collector<meta_stream_o<N, os, ins>> :
-			exp_apply<typename collector::looper_collector<make_timer_loop<meta_stream_o<N, os, ins>>>::type, stream_final_t>
+
+
+		template<std::size_t N, class os, class ins, class BF, class TL>
+		struct looper_collector<meta_stream_o<N, os, ins, BF>, TL> :
+			exp_apply<typename collector::looper_collector<make_timer_loop<meta_stream_o<N, os, ins, BF>>, TL>::type, stream_final_t>
 		{};
+
+		template<class looper, class TL = exp_list<>> using collect = typename looper_collector<looper, TL>::type;
+
 
 
 		template<class T, template<class> class ...collectable_f> struct meta_pipe_collect_stream_impl
@@ -1767,6 +1791,7 @@ namespace meta_typelist
 		using used_types = collector::collect<looper>;
 		return template_func_execute_launcher(used_types{}, f, std::forward<Args>(args)...);
 	}
+
 }
 
 template<class...Typs> struct type_list_size<exp_list<meta_traits::meta_empty, Typs...>>
