@@ -175,3 +175,7 @@ inline void copy_struct(align_memory_field<alignof(structT), Args...>& amf, stru
 {
     new(amf.base_ptr) std::remove_cvref_t<structT>{ s };
 }
+
+using do_nothing_t = decltype([](unsigned char* p) {});
+
+template<class ...Typs> using static_align_memory_field = align_memory_field<decl_align<Typs...>, do_nothing_t, Typs...>;
