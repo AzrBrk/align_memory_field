@@ -5,11 +5,9 @@
 #include<string>
 
 using namespace offset_pointer;
-using namespace meta_typelist;
-using namespace list_common_object;
+using namespace meta_typelist;//for using of meta object
 
-#define print_in_new_line(x) std::cout << '\n' << x << '\n';\
-
+//use a meta_object to register types info
 namespace my_detail {
     struct append_type_f
     {
@@ -33,8 +31,9 @@ namespace my_detail {
 
     using align_type_append_o = meta_object<meta_empty, append_type_f>;
 }
-//warning: the following codes use STMP 
-//a trick that is not suitable for real work using
+//warning: the following codes use STMP(stateful template metaprogramming)
+//tested with compiler: MSVC latest, clang 17, failed compiling at gcc 13
+//this is a trick that is not suitable for real work using
 
 //STMP implementation, using the keyword friend to inject the complier
 //the friend keyword can be used in different classes, while
@@ -97,11 +96,15 @@ using stmp_latest_t = typename stmp_latest_list<has_I<I>, I>::type;
 
 int main()
 {
+    //storage for align_memory_field
     unsigned char base_ptr[200];
+
+    //with each stmp_append it register a new type to the STMP status
     constexpr auto a = stmp_append<int>();
     constexpr auto b = stmp_append<double>();
     constexpr auto c = stmp_append<char>();
-
+    //use stmp_latest_t to fetched the latest STMP status
+    //this is impossible for a traditional TMP since it has no status
     stmp_latest_t<>{base_ptr}.write<0>(10);
     stmp_latest_t<>{base_ptr}.write<1>(12.33);
     stmp_latest_t<>{base_ptr}.write<2>('k');
@@ -109,8 +112,8 @@ int main()
     std::cout << "current_align_field_type:" << type_str<stmp_latest_t<>>() << std::endl;
 
     constexpr auto d = stmp_append<const char*>();
+    
     std::cout << "current_align_field_type:" << type_str<stmp_latest_t<>>() << std::endl;
-
     stmp_latest_t<>{base_ptr}.write<3>("hello world");
 
     template_func_execute_launcher(meta_iota<3>{}, 
@@ -119,9 +122,7 @@ int main()
     });
     
     constexpr auto e = stmp_append<std::string>();
-    
     stmp_latest_t<>{base_ptr}.initialize<4>("hello world");
-    
 
     template_func_execute_launcher(meta_iota<4>{}, 
         [&base_ptr]<std::size_t ix>(Idx<ix>) {
