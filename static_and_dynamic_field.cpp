@@ -34,7 +34,7 @@ int main() {
 
     align_memory_field<8, int, char[20], int[10], double> dynamic_field{};
 
-    copy_struct<X>(dynamic_field, std::move(*static_field.cast<X>()));
+    copy_struct<X>(dynamic_field, x);
 
     [&] <std::size_t ...I>(std::index_sequence<I...>){
         (print_array(dynamic_field.template read<I>()), ...);
